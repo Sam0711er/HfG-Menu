@@ -59,30 +59,39 @@ class ViewController: UIViewController {
     
 
     func startUserActivity() {
+        
         let activity = NSUserActivity(activityType: "com.sam0711er.HfG-Menu")
         if #available(iOS 12.0, *) {
-           // activity.isEligibleForPrediction = true
+            //activity.isEligibleForPrediction = true
         } else {
             // Fallback on earlier versions
         }
         activity.isEligibleForSearch = true
-        activity.title = "Menu"
+        activity.title = "Show me the Menu"
         self.userActivity = activity;
         self.userActivity?.becomeCurrent()
         
         
+        INPreferences.requestSiriAuthorization { (status) in
+            print("Status: \(status)")
+        }
+        
+        
         let intent = INIntent()
+        
         if #available(iOS 12.0, *) {
-           // intent.suggestedInvocationPhrase = "Show me the menu"
+            //intent.suggestedInvocationPhrase = "Show me the menu"
         } else {
             // Fallback on earlier versions
         }
         
         let inIntentResponse = INIntentResponse()
         
+        print("Registering inInteraction")
         let inInteraction = INInteraction(intent: intent, response: inIntentResponse)
-        inInteraction.donate(completion: {error in
-            
+        
+        inInteraction.donate(completion: { item in
+            print("Item is \(item)")
         })
         
     }

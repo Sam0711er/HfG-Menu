@@ -127,7 +127,8 @@ class PushService{
             let fileURL = documentDirectory.appendingPathComponent("menu.png")
             print("do runs")
             
-            
+            completion(true)
+
             
             if let imageData = UIImagePNGRepresentation(image) {
                 try imageData.write(to: fileURL)
