@@ -41,6 +41,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    func application(application: UIApplication,
+                     continueUserActivity userActivity: NSUserActivity,
+                     restorationHandler: (([AnyObject]!) -> Void))
+        -> Bool {
+            
+            print("Received a payload via handoff: ")
+            
+            let pushService = PushService()
+            pushService.scheduleNotification()
+            
+            return true
+    }
+    
 
 }
 

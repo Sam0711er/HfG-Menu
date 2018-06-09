@@ -8,6 +8,8 @@
 
 import UIKit
 import UserNotifications
+import Intents
+import IntentsUI
 
 class ViewController: UIViewController {
 
@@ -15,7 +17,7 @@ class ViewController: UIViewController {
     @IBOutlet var previewImageView: UIImageView!
     
     let center = UNUserNotificationCenter.current()
-    
+    let pushService = PushService()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,6 +31,7 @@ class ViewController: UIViewController {
 
 
     @IBAction func scheduleLocalPushAction(_ sender: Any) {
+        startUserActivity()
         
         print("Schedule Local Push")
         
@@ -38,141 +41,57 @@ class ViewController: UIViewController {
             if !granted {
                 print("Something went wrong")
             }else{
-                self.scheduleNotification()
+                self.pushService.scheduleNotification()
             }
         }
         center.getNotificationSettings { (settings) in
             if settings.authorizationStatus != .authorized {
                 // Notifications not allowed
             }else{
-                self.scheduleNotification()
+                self.pushService.scheduleNotification()
                 print("Noti on")
             }
         }
+
     }
     
     
-    func scheduleNotification (){
+    
 
+    func startUserActivity() {
+        let activity = NSUserActivity(activityType: "com.sam0711er.HfG-Menu")
+        if #available(iOS 12.0, *) {
+           // activity.isEligibleForPrediction = true
+        } else {
+            // Fallback on earlier versions
+        }
+        activity.isEligibleForSearch = true
+        activity.title = "Menu"
+        self.userActivity = activity;
+        self.userActivity?.becomeCurrent()
         
-        writeFileToFileSystem(image: convertPDFToImage(URLAsString: constructCurrentMenuURL()), completion: { success in
-            print("Sucess so far")
+        
+        let intent = INIntent()
+        if #available(iOS 12.0, *) {
+           // intent.suggestedInvocationPhrase = "Show me the menu"
+        } else {
+            // Fallback on earlier versions
+        }
+        
+        let inIntentResponse = INIntentResponse()
+        
+        let inInteraction = INInteraction(intent: intent, response: inIntentResponse)
+        inInteraction.donate(completion: {error in
+            
         })
         
-        let content = UNMutableNotificationContent()
-        content.title = "HfG Menu"
-        content.body = "Enjoy your meal!"
-        content.sound = UNNotificationSound.default()
-        content.categoryIdentifier = "EnterTextNotificationCategory"
-        
-
-        
-        let attachement = try? UNNotificationAttachment(identifier: "attachment", url: constructImageFromFileSystemURL(), options: nil)
-        content.attachments = [attachement!]
-        
-
-        
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-        
-        let identifier = "EnterTextNotification"
-        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-        
-       // let inputAction = UNTextInputNotificationAction.init(identifier: "Enter Text", title: "Enter Text on your amigOS", options: [], textInputButtonTitle: "Submit", textInputPlaceholder: "Type here…")
-        
-        let category = UNNotificationCategory(identifier: "EnterTextNotificationCategory", actions: [/*inputAction*/], intentIdentifiers: [], options: [])
-        
-        center.add(request, withCompletionHandler: { (error) in
-            if let error = error {
-                // Something went wrong
-            }
-        })
-        center.setNotificationCategories([category])
+    }
+    
+    // 2.
+    override func updateUserActivityState(_ activity: NSUserActivity) {
+        super.updateUserActivityState(activity)
     }
     
     
-    
-    func constructCurrentMenuURL() -> String{
-        let currentDate = Calendar.current.component(.weekOfYear, from: Date())
-        
-        let stringConstructor = "https://studierendenwerk-ulm.de/wp-content/uploads/speiseplaene/HFG\(currentDate).pdf"
-        
-        
-        print("contentURL is \(stringConstructor)")
-        
-        return stringConstructor
-    }
-    
-    func constructImageFromFileSystemURL() -> URL{
-        do{
-            let fileManager = FileManager.default
-            let documentDirectory = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
-            let fileURL = documentDirectory.appendingPathComponent("menu.png")
-            
-            return fileURL
-        } catch {
-            return URL(string: "")!
-            print(error)
-        }
-    }
-
-    func convertPDFToImage(URLAsString:String) -> UIImage {
-    
-        /* let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-         let filePath = documentsURL.appendingPathComponent("pathLocation").path*/
-        
-        // let filePath = URL(string: URLAsString)
-        
-        do {
-            let pdfdata = try NSData(contentsOf: URL(string: URLAsString)! )
-          //  let pdfdata = try NSData(contentsOfFile: URLAsString, options: NSData.ReadingOptions.init(rawValue: 0))
-            
-            let pdfData = pdfdata as! CFData
-            let provider:CGDataProvider = CGDataProvider(data: pdfData)!
-            let pdfDoc:CGPDFDocument = CGPDFDocument(provider)!
-            let pdfPage:CGPDFPage = pdfDoc.page(at: 1)!
-            var pageRect:CGRect = pdfPage.getBoxRect(.mediaBox)
-            pageRect.size = CGSize(width:pageRect.size.width, height:pageRect.size.height)
-            
-            print("\(pageRect.width) by \(pageRect.height)")
-            
-            UIGraphicsBeginImageContext(pageRect.size)
-            let context:CGContext = UIGraphicsGetCurrentContext()!
-            context.saveGState()
-            context.translateBy(x: 0.0, y: pageRect.size.height)
-            context.scaleBy(x: 1.0, y: -1.0)
-            context.concatenate(pdfPage.getDrawingTransform(.mediaBox, rect: pageRect, rotate: 0, preserveAspectRatio: true))
-            context.drawPDFPage(pdfPage)
-            context.restoreGState()
-            let pdfImage:UIImage = UIGraphicsGetImageFromCurrentImageContext()!
-            UIGraphicsEndImageContext()
-            
-            previewImageView.image = pdfImage
-            print("Image converted")
-            return pdfImage
-        }
-        catch {
-            return UIImage()
-        }
-    }
-    
-    func writeFileToFileSystem(image: UIImage, completion: (Bool) -> Void){
-        print("writeFileToFileSystem")
-        
-        let fileManager = FileManager.default
-        do {
-            let documentDirectory = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor:nil, create:false)
-            let fileURL = documentDirectory.appendingPathComponent("menu.png")
-            print("do runs")
-
-            if let imageData = UIImagePNGRepresentation(image) {
-                try imageData.write(to: fileURL)
-                print("Completion")
-                completion(true)
-            }else{
-                print("No Image Data")
-            }
-        } catch {
-            print(error)
-        }
-    }
 }
+
