@@ -26,7 +26,7 @@ class PushService{
         
         let content = UNMutableNotificationContent()
         content.title = "HfG Menu"
-        content.body = "Enjoy your meal!"
+        content.body = "Enjoy your meal! 🍽"
         content.categoryIdentifier = "EnterTextNotificationCategory"
         
         
@@ -36,7 +36,7 @@ class PushService{
         
         
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: UserDefaults.standard.double(forKey: "delay"), repeats: false)
         
         let identifier = "EnterTextNotification"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
